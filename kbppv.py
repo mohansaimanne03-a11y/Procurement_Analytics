@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """KB-PPV: knowledge-based, uncertainty-aware purchase-price-variance (PPV) prediction
-and cost-saving action optimisation for procurement analytics.
+and cost-saving action optimization for procurement analytics.
 
 Pipeline (Figure 1 of the paper)
     1. Knowledge layer  - monotone domain priors + action-eligibility rules
     2. Predictor        - monotone-constrained gradient boosting for PPV (%)
-    3. Uncertainty      - conformalised quantile regression (CQR) intervals
-    4. Optimiser        - multiple-choice knapsack (exact DP) over buyer hours
+    3. Uncertainty      - conformalized quantile regression (CQR) intervals
+    4. Optimizer        - multiple-choice knapsack (exact DP) over buyer hours
     5. Explanations     - occlusion-based driver attribution per PO line
 
 Usage
@@ -136,7 +136,7 @@ def load_data(path: str | None, n: int, seed: int) -> pd.DataFrame:
 
 
 # --------------------------------------------------------------------------- #
-# 2-3. Predictor and conformalised uncertainty                                #
+# 2-3. Predictor and conformalized uncertainty                                #
 # --------------------------------------------------------------------------- #
 def gbm(seed: int, cst=None, **kw) -> HGB:
     return HGB(learning_rate=0.06, max_iter=400, max_leaf_nodes=15, min_samples_leaf=20,
@@ -157,7 +157,7 @@ def make_models(columns, seed: int) -> dict:
 
 
 class CQR:
-    """Conformalised quantile regression (Romano et al., 2019) with monotone priors."""
+    """Conformalized quantile regression (Romano et al., 2019) with monotone priors."""
 
     def __init__(self, columns, alpha: float = 0.10, seed: int = 0):
         self.cst, self.alpha, self.seed = monotone_vector(columns), alpha, seed
@@ -179,7 +179,7 @@ class CQR:
 
 def violation_rate(model, X: pd.DataFrame) -> float:
     """Share of (line, constrained driver) pairs where moving the driver from its
-    favourable to its unfavourable extreme moves the prediction against domain knowledge."""
+    favorable to its unfavorable extreme moves the prediction against domain knowledge."""
     bad = tot = 0
     for col, sign in MONOTONE.items():
         lo_v, hi_v = (0.0, 1.0) if col in BINARY else (X[col].quantile(.1), X[col].quantile(.9))
@@ -192,7 +192,7 @@ def violation_rate(model, X: pd.DataFrame) -> float:
 
 
 # --------------------------------------------------------------------------- #
-# 4. Optimiser: multiple-choice knapsack                                      #
+# 4. Optimizer: multiple-choice knapsack                                      #
 # --------------------------------------------------------------------------- #
 def action_values(overspend_pct, value, elig) -> np.ndarray:
     """Savings (n x 3) of each admissible action: recovered share of the overspend."""
@@ -201,7 +201,7 @@ def action_values(overspend_pct, value, elig) -> np.ndarray:
 
 
 def solve_mckp(values: np.ndarray, capacity: int) -> np.ndarray:
-    """Exact DP: at most one action per line, maximise value within `capacity` review
+    """Exact DP: at most one action per line, maximize value within `capacity` review
     hours.  Returns choice per line (0 = none, a = action index + 1)."""
     n = len(values)
     best = np.zeros(capacity + 1)
@@ -230,8 +230,8 @@ def top_k_renegotiate(score: np.ndarray, capacity: int) -> np.ndarray:
     return sel
 
 
-def realised(sel: np.ndarray, true_vals: np.ndarray) -> tuple[float, float]:
-    """(realised savings, share of actioned lines that recovered nothing)."""
+def realized(sel: np.ndarray, true_vals: np.ndarray) -> tuple[float, float]:
+    """(realized savings, share of actioned lines that recovered nothing)."""
     idx = np.flatnonzero(sel)
     got = true_vals[idx, sel[idx] - 1]
     return float(got.sum()), float(100 * np.mean(got <= 0)) if len(idx) else 0.0
@@ -318,9 +318,9 @@ def run_replicate(df: pd.DataFrame, seed: int, n_random: int = 20) -> dict:
             "KB-PPV + MCKP": solve_mckp(kb_vals, cap),
             "KB-PPV + MCKP + interval gate": solve_mckp(gate_vals, cap),
             "Oracle (true PPV) + MCKP": solve_mckp(true_vals, cap)}
-        oracle = realised(sels["Oracle (true PPV) + MCKP"], true_vals)[0]
-        out = {k: realised(s, true_vals) + (int(np.count_nonzero(s)),) for k, s in sels.items()}
-        rnd = [realised(top_k_renegotiate(rng.random(n), cap), true_vals) for _ in range(n_random)]
+        oracle = realized(sels["Oracle (true PPV) + MCKP"], true_vals)[0]
+        out = {k: realized(s, true_vals) + (int(np.count_nonzero(s)),) for k, s in sels.items()}
+        rnd = [realized(top_k_renegotiate(rng.random(n), cap), true_vals) for _ in range(n_random)]
         out["Random lines"] = (np.mean([r[0] for r in rnd]), np.mean([r[1] for r in rnd]), cap // HOURS[0])
         for k, (sav, waste, lines) in out.items():
             rows.append(dict(fraction=f, policy=k, savings=sav, pct_oracle=100 * sav / oracle,
@@ -382,7 +382,7 @@ def plot_framework(out: Path):
              (3.75, 2.9, 2.5, 1.3, "(2) Knowledge layer\nmonotone priors +\naction-eligibility rules", "#fdf0e8"),
              (7.4, 2.9, 2.5, 1.3, "(3) Predictor\nmonotone gradient\nboosting: PPV (%)", "#e6f6ef"),
              (7.4, 0.4, 2.5, 1.3, "(4) Uncertainty\nconformal quantile\nregression (90%)", "#e6f6ef"),
-             (3.75, 0.4, 2.5, 1.3, "(5) Optimiser\nmultiple-choice knapsack\nunder hour budget", "#efedfb"),
+             (3.75, 0.4, 2.5, 1.3, "(5) Optimizer\nmultiple-choice knapsack\nunder hour budget", "#efedfb"),
              (0.1, 0.4, 2.5, 1.3, "(6) Outputs\naction plan + driver\nexplanations per line", "#eef3fb")]
     for x, y, w, h, t, c in boxes:
         ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.04", fc=c, ec="#55544f", lw=1))
@@ -418,7 +418,7 @@ def plot_decisions(out: Path, dec: pd.DataFrame):
                 markeredgecolor="white", markeredgewidth=0.6)
     ax.text(40.6, 100.6, "Oracle", fontsize=7.5, color=C["gray"], ha="right", va="bottom")
     ax.set_xlabel("Buyer capacity (% of the hours needed to renegotiate every line)", fontsize=9)
-    ax.set_ylabel("Realised savings (% of oracle)", fontsize=9)
+    ax.set_ylabel("Realized savings (% of oracle)", fontsize=9)
     ax.set_ylim(50, 104), ax.set_xlim(4, 41)
     ax.tick_params(labelsize=8)
     for s in ("top", "right"):
@@ -480,7 +480,7 @@ def selftest():
     for combo in itertools.product(range(4), repeat=7):  # brute force
         if sum(HOURS[a - 1] for a in combo if a) <= cap:
             best = max(best, sum(vals[i, a - 1] for i, a in enumerate(combo) if a))
-    assert abs(realised(solve_mckp(vals, cap), vals)[0] - best) < 1e-9, "MCKP is not optimal"
+    assert abs(realized(solve_mckp(vals, cap), vals)[0] - best) < 1e-9, "MCKP is not optimal"
     sel = solve_mckp(rng.random((300, 3)), 200)
     assert sum(HOURS[a - 1] for a in sel if a) <= 200, "capacity exceeded"
     df = make_synthetic(1500, 1)
