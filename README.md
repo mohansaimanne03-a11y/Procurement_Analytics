@@ -45,7 +45,7 @@ assumption. Conformal coverage holds under exchangeability and degrades under se
 
 ## Repository
 
-https://github.com/mohansaimanne03-a11y/Procurement_Analytics (archived DOI to be added after Zenodo release).
+https://github.com/mohansaimanne03-a11y/Procurement_Analytics (archived at https://doi.org/10.5281/zenodo.23621025).
 
 ## License
 
