@@ -43,6 +43,10 @@ The benchmark is synthetic with a known data-generating process, so decision qua
 oracle; it demonstrates the method, not field performance. The savings model (recovered share per action) is an
 assumption. Conformal coverage holds under exchangeability and degrades under severe market shocks (see paper).
 
+## Repository
+
+https://github.com/mohansaimanne03-a11y/Procurement_Analytics (archived DOI to be added after Zenodo release).
+
 ## License
 
 MIT. Cite the paper if you use the code.
